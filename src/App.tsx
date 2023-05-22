@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import './App.css';
 
 interface Position {
@@ -10,22 +10,20 @@ function App() {
   const [matrix, setMatrix] = useState<string[][]>([]);
   const [isComplete, setIsComplete] = useState(false);
   const [moveCount, setMoveCount] = useState<number>(0);
+  let movingObject = useRef<Position[]>([{x:0,y:0}]);
+  let blockingObject = useRef<Position[]>([]);
   const [matrixState, setMatrixState] = useState<{
     rows: number;
     columns: number;
     startingPosition: Position;
     endingPosition: Position;
     numberOfBlockings: number;
-    movingObject: Position[];
-    blockingObjects: Position[];
   }>({
     rows: 5,
     columns: 5,
     startingPosition: { x: 0, y: 0 },
     endingPosition: { x: 4, y: 4 },
     numberOfBlockings: 3,
-    movingObject: [{ x: 0, y: 0 }],
-    blockingObjects: [],
   });
 
   const [settings, setSettings] = useState({
@@ -61,7 +59,7 @@ function App() {
     if (blockers.some((b) => isSamePosition(b, pos))) {
       return true;
     }
-    if (matrixState.movingObject.some((b) => isSamePosition(b, pos))) {
+    if (movingObject.current.some((b) => isSamePosition(b, pos))) {
       return true;
     }
     return false;
@@ -83,10 +81,7 @@ function App() {
     for (let index = 0; index < matrixState.numberOfBlockings; index++) {
       newBlockers.push(generateBlocker(newBlockers, currentPos));
     }
-    setMatrixState((prevState) => ({
-      ...prevState,
-      blockingObjects: newBlockers,
-    }))
+    return newBlockers;
   }
 
   function generateMatrix() {
@@ -133,42 +128,29 @@ function App() {
       let path: Position[] | null = findShortestPath();
       if (path && path.length > 1) { // Check if a valid path exists
         let nextPosition = path[1];
-        setMatrixState((prevState) => ({
-          ...prevState,
-          movingObject: [...prevState.movingObject, nextPosition],
-        }));
-        console.log(nextPosition);
-        console.log(matrixState)
+        movingObject.current.push(path[1]);
+        blockingObject.current = addBlockers();
       } else {
         setMatrixState((prevState) => ({
           ...prevState,
           numberOfBlockings: prevState.numberOfBlockings - 1,
         }));
+        blockingObject.current = addBlockers();
       }
     }
   };
   
-  const complete = () => {
-    const move = () => {
-      if (isSamePosition(matrixState.movingObject[matrixState.movingObject.length - 1], matrixState.endingPosition)) {
-        setIsComplete(true);
-        return;
-      }
+  const complete = async () => {
+    while(!isSamePosition(movingObject.current[movingObject.current.length-1], matrixState.endingPosition)){
       nextMove();
-  
-      setTimeout(move, 1000); // Increase the delay to allow for visible movement
-    };
-    setIsComplete(false);
-    move();
-  };
-  
 
-  useEffect(() => {
-    if (!isComplete) {
-      addBlockers();
+      await new Promise((resolve,reject) => {
+        setTimeout(() => {
+          resolve(true);
+        },10)
+      }) 
     }
-  }, [matrixState.movingObject,matrixState.numberOfBlockings, isComplete]);
-
+  };
 
   useEffect(() => {
     generateMatrix();
@@ -184,7 +166,7 @@ function App() {
     };
 
     const isBlocked = (pos: Position): boolean => {
-      return matrixState.blockingObjects.some((b) => isSamePosition(pos, b)) || matrixState.movingObject.some((m) => isSamePosition(pos, m));
+      return blockingObject.current.some((b) => isSamePosition(pos, b)) || movingObject.current.some((m) => isSamePosition(pos, m));
     };
 
     const getNeighbors = (pos: Position): Position[] => {
@@ -207,11 +189,11 @@ function App() {
       return neighbors;
     };
 
-    const queue: Position[] = [matrixState.movingObject[matrixState.movingObject.length - 1]];
+    const queue: Position[] = [movingObject.current[movingObject.current.length - 1]];
     const visited: Set<string> = new Set();
     const cameFrom: Map<string, Position> = new Map();
 
-    visited.add(`${matrixState.movingObject[matrixState.movingObject.length - 1].x}-${matrixState.movingObject[matrixState.movingObject.length - 1].y}`);
+    visited.add(`${movingObject.current[movingObject.current.length - 1].x}-${movingObject.current[movingObject.current.length - 1].y}`);
 
     while (queue.length > 0) {
       const current = queue.shift()!;
@@ -259,10 +241,10 @@ function App() {
 
                   const currentCell: Position = { x: cellIndex, y: rowIndex };
 
-                  const isBlockingObject = matrixState.blockingObjects.some((obj) =>
+                  const isBlockingObject = blockingObject.current.some((obj) =>
                     isSamePosition(obj, currentCell)
                   );
-                  const isMovingObject = matrixState.movingObject.some((obj) =>
+                  const isMovingObject = movingObject.current.some((obj) =>
                     isSamePosition(obj, currentCell)
                   );
 
