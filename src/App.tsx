@@ -7,7 +7,7 @@ interface Position {
 }
 
 interface Stats {
-  moves?: number
+  moves: number
   exe?: number
   iteration: number
 }
@@ -17,7 +17,7 @@ function App() {
   const [moveCount, setMoveCount] = useState<number>(0)
   const [exeTime, setExeTime] = useState<number>(0)
   const [isChanged, setIsChanged] = useState<boolean>(false)
-  const statsTable = useRef<Stats[]>([{ iteration: 1 }, { iteration: 2 }, { iteration: 3 }])
+  const statsTable = useRef<Stats[]>([{moves:0, iteration: 1 }, {moves:0, iteration: 2 }, {moves:0, iteration: 3 }])
   let movingObject = useRef<Position[]>([{ x: 0, y: 0 }])
   let blockingObject = useRef<Position[]>([])
   let numberOfBlockings = useRef<number>(3)
@@ -154,22 +154,43 @@ function App() {
     }
   }
 
-  const complete = () => {
+  const complete = (separation?: number | undefined) => {
     const recursiveMove = () => {
       nextMove()
-      setMoveCount((prevMoveCount) => prevMoveCount + 1)
+
+
+      setMoveCount((prevMoveCount) => {
+          switch (separation) {
+            case 1:
+              console.log(moveCount);
+              statsTable.current[separation - 1].moves = prevMoveCount + 1;
+              break;
+            case 2:
+              console.log(moveCount);
+              statsTable.current[separation - 1].moves = prevMoveCount + 1;
+              break;
+            case 3:
+              console.log(moveCount);
+              statsTable.current[separation - 1].moves = prevMoveCount + 1;
+              break;
+    
+            default:
+              break;
+          }
+        return prevMoveCount + 1
+      })
       if (!isEnd()) {
         setTimeout(recursiveMove, 0)
       }
     }
 
-    return new Promise<{ exeTime: number; moves: number }>((resolve) => {
+    return new Promise<{ exeTime: number; }>((resolve) => {
       const start = performance.now() // start time
       recursiveMove() // initiate the first move
       const end = performance.now() // end time
       const executionTime = end - start
       setExeTime(executionTime)
-      resolve({ exeTime: executionTime, moves: moveCount })
+      resolve({ exeTime: executionTime })
     })
   }
 
@@ -181,8 +202,8 @@ function App() {
 
     numberOfBlockings.current = iterations[0]
     await new Promise((resolve) => setTimeout(resolve, 1000)) // Delay of 1 second
-    const { exeTime: executionTime1, moves: moves1 } = await complete()
-    updatedStatsTable[0] = { ...updatedStatsTable[0], moves: moves1, exe: executionTime1 }
+    const { exeTime: executionTime1} = await complete(1)
+    updatedStatsTable[0] = { ...updatedStatsTable[0], exe: executionTime1 }
 
     statsTable.current = updatedStatsTable
 
@@ -193,8 +214,8 @@ function App() {
 
     numberOfBlockings.current = iterations[1]
     await new Promise((resolve) => setTimeout(resolve, 1000)) // Delay of 3 seconds
-    const { exeTime: executionTime2, moves: moves2 } = await complete()
-    updatedStatsTable[1] = { ...updatedStatsTable[1], moves: moves2, exe: executionTime2 }
+    const { exeTime: executionTime2} = await complete(2)
+    updatedStatsTable[1] = { ...updatedStatsTable[1], exe: executionTime2 }
 
     statsTable.current = updatedStatsTable
 
@@ -205,8 +226,8 @@ function App() {
 
     numberOfBlockings.current = iterations[2]
     await new Promise((resolve) => setTimeout(resolve, 1000)) // Delay of 3 seconds
-    const { exeTime: executionTime3, moves: moves3 } = await complete()
-    updatedStatsTable[2] = { ...updatedStatsTable[2], moves: moves3, exe: executionTime3 }
+    const { exeTime: executionTime3} = await complete(3)
+    updatedStatsTable[2] = { ...updatedStatsTable[2], exe: executionTime3 }
 
     statsTable.current = updatedStatsTable
   }
@@ -368,7 +389,7 @@ function App() {
         <div className='controls'>
           <button onClick={reset}>Reset</button>
           <button onClick={nextMove}>Next move</button>
-          <button onClick={complete}>Complete</button>
+          <button onClick={() => complete()}>Complete</button>
         </div>
         <div className='controls'>
           <button onClick={() => execute(5, 5, [5, 10, 15])}>5 * 5</button>
