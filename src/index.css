@@ -5,6 +5,14 @@
 .cell {
   height: 40px;
   width: 40px;
+  min-height: 20px;
+  min-width: 20px;
+}
+
+.table {
+  margin-left: 50px;
+  width: 500px;
+  height: fit-content;
 }
 
 
@@ -20,7 +28,6 @@
   background-color: red;
 }
 
-
 .options {
   margin-top: 50px;
   width: 350px;
@@ -31,8 +38,6 @@
 }
 
 .controls {
-  margin-top: 50px;
-  margin-left: 50px;
   width: 350px;
   display: flex;
   justify-content: space-between;
@@ -41,6 +46,10 @@
 .controls button {
   height: 30px;
   width: 100px;
+}
+
+.stats {
+  width: 350px;
 }
 
 .active {
