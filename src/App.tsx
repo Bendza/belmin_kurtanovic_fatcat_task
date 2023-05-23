@@ -49,25 +49,15 @@ function App() {
   }
 
   const isEnd = () => {
-    return isSamePosition(
-      movingObject.current[movingObject.current.length - 1],
-      settings.current.endingPosition,
-    )
+    return isSamePosition(movingObject.current[movingObject.current.length - 1], settings.current.endingPosition)
   }
 
   const isSamePosition = (pos1: Position, pos2: Position): boolean => {
     return pos1.x === pos2.x && pos1.y === pos2.y
   }
 
-  const isPositionBlocked = (
-    pos: Position,
-    blockers: Position[],
-    currentPos?: Position,
-  ): boolean => {
-    if (
-      isSamePosition(settings.current.startingPosition, pos) ||
-      isSamePosition(settings.current.endingPosition, pos)
-    ) {
+  const isPositionBlocked = (pos: Position, blockers: Position[], currentPos?: Position): boolean => {
+    if (isSamePosition(settings.current.startingPosition, pos) || isSamePosition(settings.current.endingPosition, pos)) {
       return true
     }
     if (currentPos) {
@@ -139,13 +129,7 @@ function App() {
     setMoveCount(0)
   }
 
-  const applySettings = (
-    rows: number,
-    columns: number,
-    start: Position,
-    end: Position,
-    blockings: number,
-  ) => {
+  const applySettings = (rows: number, columns: number, start: Position, end: Position, blockings: number) => {
     reset()
     settings.current.rows = rows
     settings.current.columns = columns
@@ -156,7 +140,7 @@ function App() {
   }
 
   const nextMove = () => {
-    setIsChanged(!isChanged);
+    setIsChanged(!isChanged)
     if (!isEnd()) {
       let path: Position[] | null = findShortestPath()
       if (path && path.length > 1) {
@@ -193,13 +177,7 @@ function App() {
     const updatedStatsTable = [...statsTable.current]
 
     // First iteration
-    applySettings(
-      rowsE,
-      columnsE,
-      settings.current.startingPosition,
-      settings.current.endingPosition,
-      iterations[0],
-    )
+    applySettings(rowsE, columnsE, settings.current.startingPosition, settings.current.endingPosition, iterations[0])
 
     numberOfBlockings.current = iterations[0]
     await new Promise((resolve) => setTimeout(resolve, 1000)) // Delay of 1 second
@@ -211,13 +189,7 @@ function App() {
     await new Promise((resolve) => setTimeout(resolve, 1000)) // Delay of 1 second
 
     // Second iteration
-    applySettings(
-      rowsE,
-      columnsE,
-      settings.current.startingPosition,
-      settings.current.endingPosition,
-      iterations[1],
-    )
+    applySettings(rowsE, columnsE, settings.current.startingPosition, settings.current.endingPosition, iterations[1])
 
     numberOfBlockings.current = iterations[1]
     await new Promise((resolve) => setTimeout(resolve, 1000)) // Delay of 3 seconds
@@ -229,13 +201,7 @@ function App() {
     await new Promise((resolve) => setTimeout(resolve, 1000)) // Delay of 1 second
 
     // Third iteration
-    applySettings(
-      rowsE,
-      columnsE,
-      settings.current.startingPosition,
-      settings.current.endingPosition,
-      iterations[2],
-    )
+    applySettings(rowsE, columnsE, settings.current.startingPosition, settings.current.endingPosition, iterations[2])
 
     numberOfBlockings.current = iterations[2]
     await new Promise((resolve) => setTimeout(resolve, 1000)) // Delay of 3 seconds
@@ -259,10 +225,7 @@ function App() {
     }
 
     const isBlocked = (pos: Position): boolean => {
-      return (
-        blockingObject.current.some((b) => isSamePosition(pos, b)) ||
-        movingObject.current.some((m) => isSamePosition(pos, m))
-      )
+      return blockingObject.current.some((b) => isSamePosition(pos, b)) || movingObject.current.some((m) => isSamePosition(pos, m))
     }
 
     const getNeighbors = (pos: Position): Position[] => {
@@ -289,19 +252,12 @@ function App() {
     const visited: Set<string> = new Set()
     const cameFrom: Map<string, Position> = new Map()
 
-    visited.add(
-      `${movingObject.current[movingObject.current.length - 1].x}-${
-        movingObject.current[movingObject.current.length - 1].y
-      }`,
-    )
+    visited.add(`${movingObject.current[movingObject.current.length - 1].x}-${movingObject.current[movingObject.current.length - 1].y}`)
 
     while (queue.length > 0) {
       const current = queue.shift()!
 
-      if (
-        current.x === settings.current.endingPosition.x &&
-        current.y === settings.current.endingPosition.y
-      ) {
+      if (current.x === settings.current.endingPosition.x && current.y === settings.current.endingPosition.y) {
         // Reconstruct the path
         const path: Position[] = []
         let currPos: Position | undefined = current
@@ -345,24 +301,16 @@ function App() {
                 {row.map((cell, cellIndex) => {
                   const currentCell: Position = { x: rowIndex, y: cellIndex }
 
-                  const isBlockingObject = blockingObject.current.some((obj) =>
-                    isSamePosition(obj, currentCell),
-                  )
-                  const isMovingObject = movingObject.current.some((obj) =>
-                    isSamePosition(obj, currentCell),
-                  )
+                  const isBlockingObject = blockingObject.current.some((obj) => isSamePosition(obj, currentCell))
+                  const isMovingObject = movingObject.current.some((obj) => isSamePosition(obj, currentCell))
 
                   const cellClassName = `cell border 
                   ${isBlockingObject ? 'red' : ''} ${isMovingObject ? 'green' : ''}`
 
                   return (
                     <td key={cellIndex} className={cellClassName}>
-                      {isSamePosition(currentCell, settings.current.startingPosition) && (
-                        <span>start</span>
-                      )}
-                      {isSamePosition(currentCell, settings.current.endingPosition) && (
-                        <span>end</span>
-                      )}
+                      {isSamePosition(currentCell, settings.current.startingPosition) && <span>start</span>}
+                      {isSamePosition(currentCell, settings.current.endingPosition) && <span>end</span>}
                     </td>
                   )
                 })}
@@ -378,55 +326,25 @@ function App() {
         </label>
         <label>
           <p>Columns:</p>
-          <input
-            type='number'
-            name='columns'
-            value={settingsTemp.columns}
-            onChange={handleInputChange}
-          />
+          <input type='number' name='columns' value={settingsTemp.columns} onChange={handleInputChange} />
         </label>
         <label>
           <p>Starting Position:</p>
           x:
-          <input
-            type='number'
-            name='startingPositionY'
-            value={settingsTemp.startingPositionY}
-            onChange={handleInputChange}
-          />
+          <input type='number' name='startingPositionY' value={settingsTemp.startingPositionY} onChange={handleInputChange} />
           y:
-          <input
-            type='number'
-            name='startingPositionX'
-            value={settingsTemp.startingPositionX}
-            onChange={handleInputChange}
-          />
+          <input type='number' name='startingPositionX' value={settingsTemp.startingPositionX} onChange={handleInputChange} />
         </label>
         <label>
           <p>Ending Position:</p>
           x:
-          <input
-            type='number'
-            name='endingPositionY'
-            value={settingsTemp.endingPositionY}
-            onChange={handleInputChange}
-          />
+          <input type='number' name='endingPositionY' value={settingsTemp.endingPositionY} onChange={handleInputChange} />
           y:
-          <input
-            type='number'
-            name='endingPositionX'
-            value={settingsTemp.endingPositionX}
-            onChange={handleInputChange}
-          />
+          <input type='number' name='endingPositionX' value={settingsTemp.endingPositionX} onChange={handleInputChange} />
         </label>
         <label>
           <p>Number of blocking Objects:</p>
-          <input
-            type='number'
-            name='numberOfBlockings'
-            value={settingsTemp.numberOfBlockings}
-            onChange={handleInputChange}
-          />
+          <input type='number' name='numberOfBlockings' value={settingsTemp.numberOfBlockings} onChange={handleInputChange} />
         </label>
         <button
           onClick={() => {
