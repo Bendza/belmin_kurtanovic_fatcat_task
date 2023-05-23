@@ -7,14 +7,8 @@
   width: 40px;
   min-height: 20px;
   min-width: 20px;
+  text-align: center;
 }
-
-.table {
-  margin-left: 50px;
-  width: 500px;
-  height: fit-content;
-}
-
 
 .border {
   border: 1px solid black;
@@ -28,19 +22,20 @@
   background-color: red;
 }
 
-.options {
-  margin-top: 50px;
-  width: 350px;
-  display: flex;
-  flex-direction: column;
-  margin-left: 30px;
-  gap: 20px;
+.stats {
+  text-align: center;
+}
+
+.statsTable {
+  margin-left: 50px;
+  width: 500px;
+  height: fit-content;
+  text-align: center;
 }
 
 .controls {
-  width: 350px;
   display: flex;
-  justify-content: space-between;
+  justify-content: space-evenly;
 }
 
 .controls button {
@@ -48,27 +43,40 @@
   width: 100px;
 }
 
-.stats {
-  width: 350px;
+.content {
+  margin-top: 50px;
+  width: 500px;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
 }
 
-.active {
-  background-color: green;
+.settings {
+  margin-top: 50px;
+  width: 450px;
+  display: flex;
+  flex-direction: column;
+  margin-left: 30px;
+  gap: 20px;
 }
 
-.options label {
+.settings label {
   height: 50px;
   display: flex;
   align-items: center;
 }
 
-.options label input {
+.settings label input {
   height: 15px;
   width: 50px;
   margin: 0 5px;
 }
 
-.options label p {
+.settings label p {
   flex: 1 100px;
   text-align: left;
+}
+
+.settings button {
+  height: 30px;
 }

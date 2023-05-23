@@ -1,101 +1,43 @@
 import { useEffect, useRef, useState } from 'react'
-import './App.css'
-
-interface Position {
-  x: number
-  y: number
-}
-
-interface Stats {
-  moves: number
-  exe?: number
-  iteration: number
-}
+import { Position, Stats, Settings, isSamePosition, addBlockers, findShortestPath } from './utils'
+import SettingsComponent from './settings'
 
 function App() {
+  //matrix and state for checking if matrix changed
   const [matrix, setMatrix] = useState<string[][]>([])
-  const [moveCount, setMoveCount] = useState<number>(0)
-  const [exeTime, setExeTime] = useState<number>(0)
   const [isChanged, setIsChanged] = useState<boolean>(false)
-  const statsTable = useRef<Stats[]>([{moves:0, iteration: 1 }, {moves:0, iteration: 2 }, {moves:0, iteration: 3 }])
+
+  //arrays of moving and blocking objects
   let movingObject = useRef<Position[]>([{ x: 0, y: 0 }])
   let blockingObject = useRef<Position[]>([])
+
+  //display of statistics of current exectuion
+  const [moveCount, setMoveCount] = useState<number>(0)
+  const [exeTime, setExeTime] = useState<number>(0)
   let numberOfBlockings = useRef<number>(3)
 
-  const settings = useRef<{
-    rows: number
-    columns: number
-    startingPosition: Position
-    endingPosition: Position
-  }>({
+  //display of results for preset itterations
+  const statsTable = useRef<Stats[]>([
+    { moves: 0, exe: 0, iteration: 1 },
+    { moves: 0, exe: 0, iteration: 2 },
+    { moves: 0, exe: 0, iteration: 3 },
+  ])
+
+  //default settings
+  const settings = useRef<Settings>({
     rows: 5,
     columns: 5,
     startingPosition: { x: 0, y: 0 },
     endingPosition: { x: 4, y: 4 },
+    animations: true,
   })
 
-  const [settingsTemp, setSettingsTemp] = useState({
-    rows: 5,
-    columns: 5,
-    startingPositionX: 0,
-    startingPositionY: 0,
-    endingPositionX: 4,
-    endingPositionY: 4,
-    numberOfBlockings: 3,
-  })
-
-  function randomNumber(min: number, max: number) {
-    return Math.floor(Math.random() * (max - min) + min)
-  }
-
+  //checks if moving object reached the destination
   const isEnd = () => {
     return isSamePosition(movingObject.current[movingObject.current.length - 1], settings.current.endingPosition)
   }
 
-  const isSamePosition = (pos1: Position, pos2: Position): boolean => {
-    return pos1.x === pos2.x && pos1.y === pos2.y
-  }
-
-  const isPositionBlocked = (pos: Position, blockers: Position[], currentPos?: Position): boolean => {
-    if (isSamePosition(settings.current.startingPosition, pos) || isSamePosition(settings.current.endingPosition, pos)) {
-      return true
-    }
-    if (currentPos) {
-      if (isSamePosition(pos, currentPos)) {
-        return true
-      }
-    }
-    if (blockers.some((b) => isSamePosition(b, pos))) {
-      return true
-    }
-    if (movingObject.current.some((b) => isSamePosition(b, pos))) {
-      return true
-    }
-    return false
-  }
-
-  const generateBlockers = (blockers: Position[], count: number): Position[] => {
-    const newBlockers: Position[] = []
-    let remainingCount = count
-
-    while (remainingCount > 0) {
-      const x = randomNumber(0, settings.current.rows)
-      const y = randomNumber(0, settings.current.columns)
-      const blocker: Position = { x, y }
-
-      if (!isPositionBlocked(blocker, newBlockers)) {
-        newBlockers.push(blocker)
-        remainingCount--
-      }
-    }
-
-    return newBlockers
-  }
-
-  const addBlockers = () => {
-    return generateBlockers(blockingObject.current, numberOfBlockings.current)
-  }
-
+  //generating and seting matrix
   function generateMatrix() {
     const matrix: string[][] = []
 
@@ -111,217 +53,122 @@ function App() {
     setMatrix(matrix)
   }
 
-  const handleInputChange = (event: { target: { name: any; value: any } }) => {
-    const { name, value } = event.target
-
-    setSettingsTemp((prevSettings) => ({
-      ...prevSettings,
-      [name]: typeof value === 'string' ? parseInt(value) : value,
-    }))
-  }
-
+  //reseting matrix and keeping the settings
   const reset = () => {
     setIsChanged(!isChanged)
     blockingObject.current = []
     movingObject.current = [settings.current.startingPosition]
-    numberOfBlockings.current = 0
     setExeTime(0)
     setMoveCount(0)
   }
 
-  const applySettings = (rows: number, columns: number, start: Position, end: Position, blockings: number) => {
+  //reseting matrix and applying new settings
+  const applySettings = (rows: number, columns: number, start: Position, end: Position, blockings: number, animations: boolean) => {
     reset()
     settings.current.rows = rows
     settings.current.columns = columns
     settings.current.startingPosition = start
     settings.current.endingPosition = end
+    settings.current.animations = animations
     numberOfBlockings.current = blockings
     movingObject.current = [start]
   }
 
+  //one move forward
   const nextMove = () => {
     setIsChanged(!isChanged)
     if (!isEnd()) {
-      let path: Position[] | null = findShortestPath()
+      let path: Position[] | null = findShortestPath(movingObject.current, blockingObject.current, settings.current) //using breadth first search algorithm to find path
+
+      //checking if valid path exists
       if (path && path.length > 1) {
-        // Check if a valid path exists
+        //if it does,append move object for one cell and generate new blockings
         movingObject.current.push(path[1])
-        blockingObject.current = addBlockers()
+        blockingObject.current = addBlockers(movingObject.current, numberOfBlockings.current, settings.current) //add new blockers
       } else {
+        //if it doesn't, decrease number of blocking objects by 1 and generate new blockings
         numberOfBlockings.current = numberOfBlockings.current - 1
-        blockingObject.current = addBlockers()
+        blockingObject.current = addBlockers(movingObject.current, numberOfBlockings.current, settings.current)
       }
     }
   }
 
-  const complete = (separation?: number | undefined) => {
+  //completing whole path
+  const complete = (statsTableIndex?: number | undefined) => {
     const recursiveMove = () => {
       nextMove()
 
-
       setMoveCount((prevMoveCount) => {
-          switch (separation) {
-            case 1:
-              console.log(moveCount);
-              statsTable.current[separation - 1].moves = prevMoveCount + 1;
-              break;
-            case 2:
-              console.log(moveCount);
-              statsTable.current[separation - 1].moves = prevMoveCount + 1;
-              break;
-            case 3:
-              console.log(moveCount);
-              statsTable.current[separation - 1].moves = prevMoveCount + 1;
-              break;
-    
-            default:
-              break;
-          }
+        //setting move count and number of moves in result table
+        if (statsTableIndex !== undefined) {
+          statsTable.current[statsTableIndex].moves = prevMoveCount + 1
+        }
         return prevMoveCount + 1
       })
       if (!isEnd()) {
-        setTimeout(recursiveMove, 0)
+        if (settings.current.animations) {
+          //checking if animations are enabled, if yes setTimeout for delay
+          setTimeout(recursiveMove, 0)
+        } else {
+          recursiveMove()
+        }
       }
     }
 
-    return new Promise<{ exeTime: number; }>((resolve) => {
+    return new Promise<{ exeTime: number }>((resolve) => {
       const start = performance.now() // start time
       recursiveMove() // initiate the first move
       const end = performance.now() // end time
-      const executionTime = end - start
-      setExeTime(executionTime)
-      resolve({ exeTime: executionTime })
+      setExeTime(end - start)
+      resolve({ exeTime: end - start })
     })
   }
 
-  const execute = async (rowsE: number, columnsE: number, iterations: number[]) => {
-    const updatedStatsTable = [...statsTable.current]
+  //executing three preset itterations in sequence and storing their number of moves and execution times in table
+  const execute = async (rows: number, columns: number, iterations: number[]) => {
+    const runIteration = async (index: number) => {
+      //applying preset settings for the itteration
+      applySettings(rows, columns, settings.current.startingPosition, settings.current.endingPosition, iterations[index], settings.current.animations)
+      numberOfBlockings.current = iterations[index]
 
-    // First iteration
-    applySettings(rowsE, columnsE, settings.current.startingPosition, settings.current.endingPosition, iterations[0])
-
-    numberOfBlockings.current = iterations[0]
-    await new Promise((resolve) => setTimeout(resolve, 1000)) // Delay of 1 second
-    const { exeTime: executionTime1} = await complete(1)
-    updatedStatsTable[0] = { ...updatedStatsTable[0], exe: executionTime1 }
-
-    statsTable.current = updatedStatsTable
-
-    await new Promise((resolve) => setTimeout(resolve, 1000)) // Delay of 1 second
-
-    // Second iteration
-    applySettings(rowsE, columnsE, settings.current.startingPosition, settings.current.endingPosition, iterations[1])
-
-    numberOfBlockings.current = iterations[1]
-    await new Promise((resolve) => setTimeout(resolve, 1000)) // Delay of 3 seconds
-    const { exeTime: executionTime2} = await complete(2)
-    updatedStatsTable[1] = { ...updatedStatsTable[1], exe: executionTime2 }
-
-    statsTable.current = updatedStatsTable
-
-    await new Promise((resolve) => setTimeout(resolve, 1000)) // Delay of 1 second
-
-    // Third iteration
-    applySettings(rowsE, columnsE, settings.current.startingPosition, settings.current.endingPosition, iterations[2])
-
-    numberOfBlockings.current = iterations[2]
-    await new Promise((resolve) => setTimeout(resolve, 1000)) // Delay of 3 seconds
-    const { exeTime: executionTime3} = await complete(3)
-    updatedStatsTable[2] = { ...updatedStatsTable[2], exe: executionTime3 }
-
-    statsTable.current = updatedStatsTable
+      const { exeTime } = await complete(index) //executing complete function
+      statsTable.current[index] = { ...statsTable.current[index], exe: exeTime } //seting executionTime in table
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+    }
+    for (let i = 0; i < iterations.length; i++) {
+      //executing the iterrations one by one
+      await runIteration(i)
+    }
   }
 
+  //updating matrix visuals
   useEffect(() => {
     generateMatrix()
   }, [isChanged])
-
-  const findShortestPath = (): Position[] | null => {
-    const rows = settings.current.rows
-    const columns = settings.current.columns
-
-    const isValidPosition = (pos: Position): boolean => {
-      const { x, y } = pos
-      return x >= 0 && x < rows && y >= 0 && y < columns
-    }
-
-    const isBlocked = (pos: Position): boolean => {
-      return blockingObject.current.some((b) => isSamePosition(pos, b)) || movingObject.current.some((m) => isSamePosition(pos, m))
-    }
-
-    const getNeighbors = (pos: Position): Position[] => {
-      const neighbors: Position[] = []
-      const { x, y } = pos
-
-      const dx = [-1, 0, 1, 0]
-      const dy = [0, 1, 0, -1]
-
-      for (let i = 0; i < 4; i++) {
-        const newX = x + dx[i]
-        const newY = y + dy[i]
-        const neighborPos: Position = { x: newX, y: newY }
-
-        if (isValidPosition(neighborPos) && !isBlocked(neighborPos)) {
-          neighbors.push(neighborPos)
-        }
-      }
-
-      return neighbors
-    }
-
-    const queue: Position[] = [movingObject.current[movingObject.current.length - 1]]
-    const visited: Set<string> = new Set()
-    const cameFrom: Map<string, Position> = new Map()
-
-    visited.add(`${movingObject.current[movingObject.current.length - 1].x}-${movingObject.current[movingObject.current.length - 1].y}`)
-
-    while (queue.length > 0) {
-      const current = queue.shift()!
-
-      if (current.x === settings.current.endingPosition.x && current.y === settings.current.endingPosition.y) {
-        // Reconstruct the path
-        const path: Position[] = []
-        let currPos: Position | undefined = current
-        while (currPos) {
-          path.unshift(currPos)
-          currPos = cameFrom.get(`${currPos.x}-${currPos.y}`)
-        }
-        return path
-      }
-
-      const neighbors = getNeighbors(current)
-      for (const neighbor of neighbors) {
-        const neighborKey = `${neighbor.x}-${neighbor.y}`
-        if (!visited.has(neighborKey)) {
-          visited.add(neighborKey)
-          queue.push(neighbor)
-          cameFrom.set(neighborKey, current)
-        }
-      }
-    }
-    // No path found
-    return null
-  }
 
   return (
     <div className='App'>
       <div>
         <table>
           <thead>
-            <td></td>
-            {Array.from({ length: settings.current.columns }, (_, index) => (
-              <td key={index} className='cell'>
-                {index}
-              </td>
-            ))}
+            <tr>
+              <th></th>
+              {/* column header */}
+              {Array.from({ length: settings.current.columns }, (column, index) => (
+                <th key={index} className='cell'>
+                  {index}
+                </th>
+              ))}
+            </tr>
           </thead>
           <tbody>
             {matrix.map((row, rowIndex) => (
               <tr key={rowIndex}>
+                {/* row header */}
                 <td className='cell'>{rowIndex}</td>
                 {row.map((cell, cellIndex) => {
                   const currentCell: Position = { x: rowIndex, y: cellIndex }
-
+                  // setting background of cell based on its position
                   const isBlockingObject = blockingObject.current.some((obj) => isSamePosition(obj, currentCell))
                   const isMovingObject = movingObject.current.some((obj) => isSamePosition(obj, currentCell))
 
@@ -330,6 +177,7 @@ function App() {
 
                   return (
                     <td key={cellIndex} className={cellClassName}>
+                      {/* setting text in the starting and ending cell */}
                       {isSamePosition(currentCell, settings.current.startingPosition) && <span>start</span>}
                       {isSamePosition(currentCell, settings.current.endingPosition) && <span>end</span>}
                     </td>
@@ -340,84 +188,44 @@ function App() {
           </tbody>
         </table>
       </div>
-      <div className='options'>
-        <label>
-          <p>Rows:</p>
-          <input type='number' name='rows' value={settingsTemp.rows} onChange={handleInputChange} />
-        </label>
-        <label>
-          <p>Columns:</p>
-          <input type='number' name='columns' value={settingsTemp.columns} onChange={handleInputChange} />
-        </label>
-        <label>
-          <p>Starting Position:</p>
-          x:
-          <input type='number' name='startingPositionY' value={settingsTemp.startingPositionY} onChange={handleInputChange} />
-          y:
-          <input type='number' name='startingPositionX' value={settingsTemp.startingPositionX} onChange={handleInputChange} />
-        </label>
-        <label>
-          <p>Ending Position:</p>
-          x:
-          <input type='number' name='endingPositionY' value={settingsTemp.endingPositionY} onChange={handleInputChange} />
-          y:
-          <input type='number' name='endingPositionX' value={settingsTemp.endingPositionX} onChange={handleInputChange} />
-        </label>
-        <label>
-          <p>Number of blocking Objects:</p>
-          <input type='number' name='numberOfBlockings' value={settingsTemp.numberOfBlockings} onChange={handleInputChange} />
-        </label>
-        <button
-          onClick={() => {
-            applySettings(
-              settingsTemp.rows,
-              settingsTemp.columns,
-              {
-                x: settingsTemp.startingPositionX,
-                y: settingsTemp.startingPositionY,
-              },
-              {
-                x: settingsTemp.endingPositionX,
-                y: settingsTemp.endingPositionY,
-              },
-              settingsTemp.numberOfBlockings,
-            )
-          }}
-        >
-          Apply settings
-        </button>
-        <div className='controls'>
-          <button onClick={reset}>Reset</button>
-          <button onClick={nextMove}>Next move</button>
-          <button onClick={() => complete()}>Complete</button>
-        </div>
+      <SettingsComponent applySettings={applySettings} reset={reset} />
+      <div className='content'>
+        <table className='statsTable'>
+          <thead>
+            <tr>
+              <th></th>
+              <th>MOVES</th>
+              <th>EXE TIME</th>
+            </tr>
+          </thead>
+          <tbody>
+            {/* display of results for preset itterations */}
+            {statsTable.current.map((stat, index) => (
+              <tr key={index}>
+                <td>{stat.iteration && <>I{Array(stat.iteration).fill('I')}</>}</td>
+                <td>{stat.moves}</td>
+                <td>{stat.exe} miliseconds</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
         <div className='controls'>
           <button onClick={() => execute(5, 5, [5, 10, 15])}>5 * 5</button>
           <button onClick={() => execute(10, 10, [10, 30, 81])}>10 * 10</button>
           <button onClick={() => execute(20, 20, [30, 100, 361])}>20 * 20</button>
         </div>
+
         <div className='stats'>
           <p>Move: {moveCount} </p>
           <p>Blockers: {numberOfBlockings.current}</p>
           <p>Execution time: {exeTime} miliseconds</p>
         </div>
+        <div className='controls'>
+          <button onClick={nextMove}>Next move</button>
+          <button onClick={() => complete()}>Complete</button>
+        </div>
       </div>
-      <table className='table'>
-        <thead>
-          <tr>
-            <th></th>
-            <th>MOVES</th>
-            <th>EXE TIME</th>
-          </tr>
-        </thead>
-        {statsTable.current.map((stat) => (
-          <tr>
-            <td>{stat.iteration}</td>
-            <td>{stat.moves}</td>
-            <td>{stat.exe} miliseconds</td>
-          </tr>
-        ))}
-      </table>
     </div>
   )
 }
