@@ -8,13 +8,13 @@ function App() {
   const [isChanged, setIsChanged] = useState<boolean>(false)
 
   //arrays of moving and blocking objects
-  let movingObject = useRef<Position[]>([{ x: 0, y: 0 }])
-  let blockingObject = useRef<Position[]>([])
+  const movingObject = useRef<Position[]>([{ x: 0, y: 0 }])
+  const blockingObject = useRef<Position[]>([])
 
   //display of statistics of current exectuion
   const [moveCount, setMoveCount] = useState<number>(0)
   const [exeTime, setExeTime] = useState<number>(0)
-  let numberOfBlockings = useRef<number>(3)
+  const numberOfBlockings = useRef<number>(3)
 
   //display of results for preset itterations
   const statsTable = useRef<Stats[]>([
@@ -78,7 +78,7 @@ function App() {
   const nextMove = () => {
     setIsChanged(!isChanged)
     if (!isEnd()) {
-      let path: Position[] | null = findShortestPath(movingObject.current, blockingObject.current, settings.current) //using breadth first search algorithm to find path
+      const path: Position[] | null = findShortestPath(movingObject.current, blockingObject.current, settings.current) //using breadth first search algorithm to find path
 
       //checking if valid path exists
       if (path && path.length > 1) {

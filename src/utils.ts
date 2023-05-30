@@ -127,8 +127,17 @@ const findShortestPath = (movingObject: Position[], blockingObject: Position[], 
       }
     }
   }
-  // No path found
-  return null
+  // checking for alternative paths
+  for (let x = 0; x < rows; x++) {
+    for (let y = 0; y < columns; y++) {
+      const pos: Position = { x, y };
+      if (isValidPosition(pos) && !isBlocked(pos) && !visited.has(`${x}-${y}`)) {
+        return [pos];
+      }
+    }
+  }
+
+  return null;
 }
 
 export { addBlockers, isSamePosition, randomNumber, findShortestPath }
