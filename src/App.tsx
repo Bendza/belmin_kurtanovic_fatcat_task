@@ -211,9 +211,9 @@ function App() {
         </table>
 
         <div className='controls'>
-          <button onClick={() => execute(5, 5, [5, 10, 15])}>5 * 5</button>
-          <button onClick={() => execute(10, 10, [10, 30, 81])}>10 * 10</button>
-          <button onClick={() => execute(20, 20, [30, 100, 361])}>20 * 20</button>
+          <button onClick={() => execute(5, 5, [5, 10, 15])}>5 x 5</button>
+          <button onClick={() => execute(10, 10, [10, 30, 81])}>10 x 10</button>
+          <button onClick={() => execute(20, 20, [30, 100, 361])}>20 x 20</button>
         </div>
 
         <div className='stats'>
