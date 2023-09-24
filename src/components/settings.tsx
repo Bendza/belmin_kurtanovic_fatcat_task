@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Position } from './utils'
+import { Position } from '../utils'
 
 interface SettingsProps {
   applySettings: (
@@ -11,17 +11,20 @@ interface SettingsProps {
     animations: boolean,
   ) => void
   reset: () => void
+  selectedAlgorithm: string;
+  setSelectedAlgorithm: (algorithm: string) => void;
 }
 
 const SettingsComponent: React.FC<SettingsProps> = ({ applySettings, reset }) => {
-  const [rows, setRows] = useState(5)
-  const [columns, setColumns] = useState(5)
+  const [rows, setRows] = useState(20)
+  const [columns, setColumns] = useState(20)
   const [startingPositionX, setStartingPositionX] = useState(0)
   const [startingPositionY, setStartingPositionY] = useState(0)
-  const [endingPositionX, setEndingPositionX] = useState(4)
-  const [endingPositionY, setEndingPositionY] = useState(4)
-  const [numberOfBlockings, setNumberOfBlockings] = useState(3)
+  const [endingPositionX, setEndingPositionX] = useState(16)
+  const [endingPositionY, setEndingPositionY] = useState(16)
+  const [numberOfBlockings, setNumberOfBlockings] = useState(200)
   const [animations, setAnimations] = useState(true)
+  const [selectedAlgorithm, setSelectedAlgorithm] = useState<string>('BFS')
 
   //handles changes from inputs and sets them in state
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -89,6 +92,7 @@ const SettingsComponent: React.FC<SettingsProps> = ({ applySettings, reset }) =>
 
   return (
     <div className='settings'>
+      <p className='header'>Settings:</p>
       <label>
         <p>Rows:</p>
         <input type='number' name='rows' value={rows} onChange={handleInputChange} />
@@ -120,7 +124,19 @@ const SettingsComponent: React.FC<SettingsProps> = ({ applySettings, reset }) =>
         <input type='checkbox' checked={animations} onChange={handleToggleAnimations} />
       </label>
       <button onClick={handleApplySettings}>Apply settings</button>
-      <button onClick={handleReset}>Reset</button>
+      <button onClick={handleReset}>Reset to default</button>
+      <p className='header'>Algorithm:</p>
+      <div className='algorithms'>
+        <button className={`algo-button ${selectedAlgorithm === 'BFS' ? 'selected' : ''}`} onClick={() => setSelectedAlgorithm('BFS')}>
+          Breath first
+        </button>
+        <button className={`algo-button ${selectedAlgorithm === 'A*' ? 'selected' : ''}`} onClick={() => setSelectedAlgorithm('A*')}>
+          A*
+        </button>
+        <button className={`algo-button ${selectedAlgorithm === "Dijkstra" ? 'selected' : ''}`} onClick={() => setSelectedAlgorithm("Dijkstra")}>
+          Dijkstra's
+        </button>
+      </div>
     </div>
   )
 }

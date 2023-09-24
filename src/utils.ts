@@ -140,4 +140,5 @@ const findShortestPath = (movingObject: Position[], blockingObject: Position[], 
   return null;
 }
 
+
 export { addBlockers, isSamePosition, randomNumber, findShortestPath }

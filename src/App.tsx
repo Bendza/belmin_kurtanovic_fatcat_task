@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { Position, Stats, Settings, isSamePosition, addBlockers, findShortestPath } from './utils'
-import SettingsComponent from './settings'
+import { Position, Settings, isSamePosition, addBlockers, findShortestPath } from './utils'
+import SettingsComponent from './components/settings'
+import ContentComponent from './components/content'
 
 function App() {
   //matrix and state for checking if matrix changed
@@ -14,21 +15,17 @@ function App() {
   //display of statistics of current exectuion
   const [moveCount, setMoveCount] = useState<number>(0)
   const [exeTime, setExeTime] = useState<number>(0)
-  const numberOfBlockings = useRef<number>(3)
+  const numberOfBlockings = useRef<number>(200)
 
-  //display of results for preset itterations
-  const statsTable = useRef<Stats[]>([
-    { moves: 0, exe: 0, iteration: 1 },
-    { moves: 0, exe: 0, iteration: 2 },
-    { moves: 0, exe: 0, iteration: 3 },
-  ])
+  //selceted algorithm state
+  const [selectedAlgorithm, setSelectedAlgorithm] = useState<string>('BFS') // Move the selectedAlgorithm state here
 
   //default settings
   const settings = useRef<Settings>({
-    rows: 5,
-    columns: 5,
+    rows: 20,
+    columns: 20,
     startingPosition: { x: 0, y: 0 },
-    endingPosition: { x: 4, y: 4 },
+    endingPosition: { x: 16, y: 16 },
     animations: true,
   })
 
@@ -58,6 +55,7 @@ function App() {
     setIsChanged(!isChanged)
     blockingObject.current = []
     movingObject.current = [settings.current.startingPosition]
+    numberOfBlockings.current = 200
     setExeTime(0)
     setMoveCount(0)
   }
@@ -90,21 +88,15 @@ function App() {
         numberOfBlockings.current = numberOfBlockings.current - 1
         blockingObject.current = addBlockers(movingObject.current, numberOfBlockings.current, settings.current)
       }
+      setMoveCount((prevMoveCount) => prevMoveCount + 1)
     }
   }
 
   //completing whole path
-  const complete = (statsTableIndex?: number | undefined) => {
+  const complete = () => {
     const recursiveMove = () => {
       nextMove()
 
-      setMoveCount((prevMoveCount) => {
-        //setting move count and number of moves in result table
-        if (statsTableIndex !== undefined) {
-          statsTable.current[statsTableIndex].moves = prevMoveCount + 1
-        }
-        return prevMoveCount + 1
-      })
       if (!isEnd()) {
         if (settings.current.animations) {
           //checking if animations are enabled, if yes setTimeout for delay
@@ -124,23 +116,6 @@ function App() {
     })
   }
 
-  //executing three preset itterations in sequence and storing their number of moves and execution times in table
-  const execute = async (rows: number, columns: number, iterations: number[]) => {
-    const runIteration = async (index: number) => {
-      //applying preset settings for the itteration
-      applySettings(rows, columns, settings.current.startingPosition, settings.current.endingPosition, iterations[index], settings.current.animations)
-      numberOfBlockings.current = iterations[index]
-
-      const { exeTime } = await complete(index) //executing complete function
-      statsTable.current[index] = { ...statsTable.current[index], exe: exeTime } //seting executionTime in table
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-    }
-    for (let i = 0; i < iterations.length; i++) {
-      //executing the iterrations one by one
-      await runIteration(i)
-    }
-  }
-
   //updating matrix visuals
   useEffect(() => {
     generateMatrix()
@@ -148,7 +123,7 @@ function App() {
 
   return (
     <div className='App'>
-      <div>
+      <div className='table'>
         <table>
           <thead>
             <tr>
@@ -156,7 +131,7 @@ function App() {
               {/* column header */}
               {Array.from({ length: settings.current.columns }, (column, index) => (
                 <th key={index} className='cell'>
-                  {index}
+                  {/* {index} */}
                 </th>
               ))}
             </tr>
@@ -165,14 +140,14 @@ function App() {
             {matrix.map((row, rowIndex) => (
               <tr key={rowIndex}>
                 {/* row header */}
-                <td className='cell'>{rowIndex}</td>
+                {/* <td className='cell'>{rowIndex}</td> */}
                 {row.map((cell, cellIndex) => {
                   const currentCell: Position = { x: rowIndex, y: cellIndex }
                   // setting background of cell based on its position
                   const isBlockingObject = blockingObject.current.some((obj) => isSamePosition(obj, currentCell))
                   const isMovingObject = movingObject.current.some((obj) => isSamePosition(obj, currentCell))
 
-                  const cellClassName = `cell border 
+                  const cellClassName = `cell-${settings.current.columns} border 
                   ${isBlockingObject ? 'red' : ''} ${isMovingObject ? 'green' : ''}`
 
                   return (
@@ -188,43 +163,25 @@ function App() {
           </tbody>
         </table>
       </div>
-      <SettingsComponent applySettings={applySettings} reset={reset} />
-      <div className='content'>
-        <table className='statsTable'>
-          <thead>
-            <tr>
-              <th></th>
-              <th>MOVES</th>
-              <th>EXE TIME</th>
-            </tr>
-          </thead>
-          <tbody>
-            {/* display of results for preset itterations */}
-            {statsTable.current.map((stat, index) => (
-              <tr key={index}>
-                <td>{stat.iteration && <>I{Array(stat.iteration).fill('I')}</>}</td>
-                <td>{stat.moves}</td>
-                <td>{stat.exe} miliseconds</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        <div className='controls'>
-          <button onClick={() => execute(5, 5, [5, 10, 15])}>5 x 5</button>
-          <button onClick={() => execute(10, 10, [10, 30, 81])}>10 x 10</button>
-          <button onClick={() => execute(20, 20, [30, 100, 361])}>20 x 20</button>
-        </div>
-
-        <div className='stats'>
-          <p>Move: {moveCount} </p>
-          <p>Blockers: {numberOfBlockings.current}</p>
-          <p>Execution time: {exeTime} miliseconds</p>
-        </div>
-        <div className='controls'>
-          <button onClick={nextMove}>Next move</button>
-          <button onClick={() => complete()}>Complete</button>
-        </div>
+      <div className='settings-controls'>
+        <label className='description'>
+          This application solves a matrix problem by finding a path for a moving object (MO) from start to end coordinates, while generating blocking
+          objects (BO) on each step. If there are no possible paths found, number of blocking objects is reduced by one and we try again until path is
+          found.
+        </label>
+        <SettingsComponent
+          selectedAlgorithm={selectedAlgorithm}
+          setSelectedAlgorithm={setSelectedAlgorithm}
+          applySettings={applySettings}
+          reset={reset}
+        />
+        <ContentComponent
+          moveCount={moveCount}
+          numberOfBlockings={numberOfBlockings.current}
+          exeTime={exeTime}
+          nextMove={nextMove}
+          complete={() => complete()}
+        />
       </div>
     </div>
   )
